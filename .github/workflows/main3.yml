@@ -1,0 +1,60 @@
+
+name: APK ve AAB derle
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu al
+        uses: actions/checkout@v4
+
+      - name: Java 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK bileşenlerini kontrol et
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME"
+          ls "$ANDROID_HOME"
+
+      - name: Gradle önbelleği ve kurulum
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Gradle Wrapper izni
+        run: chmod +x ./gradlew
+
+      - name: APK ve AAB derle
+        run: ./gradlew assembleDebug bundleDebug --no-daemon --stacktrace
+
+      - name: Çıktıları hazırla
+        run: |
+          V="1.0.0"
+          if [ -f VERSION ]; then
+            V=$(tr -d '[:space:]' < VERSION)
+          fi
+
+          mkdir -p cikti
+          cp app/build/outputs/apk/debug/app-debug.apk \
+            "cikti/InstaPulse-$V.apk"
+          cp app/build/outputs/bundle/debug/app-debug.aab \
+            "cikti/InstaPulse-$V.aab"
+
+      - name: APK ve AAB dosyalarını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstaPulse-Android
+          path: cikti/*
+          if-no-files-found: error
+          retention-days: 7
