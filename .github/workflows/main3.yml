@@ -25,6 +25,13 @@ jobs:
             unzip -q -o "$Z" -d proje
           fi
 
+      - name: Java 17 hedefini ayarla
+        run: |
+          F=$(find . -path '*/app/build.gradle.kts' -not -path '*/build/*' | head -n 1)
+          echo "Dosya: $F"
+          grep -q 'jvmTarget' "$F" || sed -i '/^android {/a\    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n    kotlinOptions { jvmTarget = "17" }' "$F"
+          cat "$F" | head -25
+
       - name: Java 17 kur
         uses: actions/setup-java@v4
         with:
@@ -43,7 +50,6 @@ jobs:
             -not -path '*/.gradle/*' -not -path '*/build/*' | head -n 1)
           if [ -z "$P" ]; then
             echo "::error::settings.gradle.kts bulunamadı"
-            ls -R . | head -50
             exit 1
           fi
           echo "dir=$(dirname "$P")" >> "$GITHUB_OUTPUT"
